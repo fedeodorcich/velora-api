@@ -9,4 +9,10 @@ export class AppController {
   getHello(): string {
     return this.appService.getHello();
   }
+
+  /** Liveness probe para el hosting (Render): `GET /api/health`. */
+  @Get('health')
+  getHealth(): { status: 'ok'; uptime: number } {
+    return { status: 'ok', uptime: Math.round(process.uptime()) };
+  }
 }

@@ -18,6 +18,7 @@ export const dataSourceOptions: DataSourceOptions = {
   username: env.database.username,
   password: env.database.password,
   database: env.database.name,
+  ssl: env.database.ssl ? { rejectUnauthorized: false } : false,
   entities: [User, Client, Quote, QuoteItem, Project, Payment],
   migrations: ['dist/migrations/*.js'],
   synchronize: env.database.synchronize,

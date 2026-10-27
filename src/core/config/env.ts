@@ -34,6 +34,15 @@ function readBoolean(name: string, fallback: boolean): boolean {
 const nodeEnv = readString('NODE_ENV', 'development');
 const isProduction = nodeEnv === 'production';
 
+/**
+ * Orígenes permitidos por CORS: `CORS_ORIGIN` admite una lista separada por comas
+ * (`https://velora.app,https://www.velora.app`).
+ */
+const corsOrigins = readString('CORS_ORIGIN', 'http://localhost:4200')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter((origin) => origin.length > 0);
+
 const jwtSecretFallback = 'devcrm_dev_secret_change_me';
 const jwtSecret = readString('JWT_SECRET', jwtSecretFallback);
 
@@ -45,7 +54,7 @@ export const env = {
   nodeEnv,
   isProduction,
   port: readNumber('PORT', 3000),
-  corsOrigin: readString('CORS_ORIGIN', 'http://localhost:4200'),
+  corsOrigins,
   database: {
     host: readString('DB_HOST', 'localhost'),
     port: readNumber('DB_PORT', 5432),
@@ -56,6 +65,8 @@ export const env = {
     synchronize: readBoolean('DB_SYNCHRONIZE', false) && !isProduction,
     /** Aplica automáticamente las migraciones pendientes al arrancar la API. */
     migrationsRun: readBoolean('DB_MIGRATIONS_RUN', true),
+    /** Los Postgres gestionados (Neon, Render) exigen TLS. */
+    ssl: readBoolean('DB_SSL', false),
   },
   jwt: {
     secret: jwtSecret,

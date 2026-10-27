@@ -19,4 +19,13 @@ describe('AppController', () => {
       expect(appController.getHello()).toBe('Hello World!');
     });
   });
+
+  describe('health', () => {
+    it('responde ok con el uptime del proceso', () => {
+      const health = appController.getHealth();
+
+      expect(health.status).toBe('ok');
+      expect(health.uptime).toBeGreaterThanOrEqual(0);
+    });
+  });
 });
