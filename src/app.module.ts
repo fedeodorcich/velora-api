@@ -9,6 +9,7 @@ import { ClientsModule } from './modules/clients/clients.module.js';
 import { PaymentsModule } from './modules/payments/payments.module.js';
 import { ProjectsModule } from './modules/projects/projects.module.js';
 import { QuotesModule } from './modules/quotes/quotes.module.js';
+import { DashboardModule } from './modules/dashboard/dashboard.module.js';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { QuotesModule } from './modules/quotes/quotes.module.js';
     QuotesModule,
     ProjectsModule,
     PaymentsModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],
