@@ -1,0 +1,71 @@
+name: Backend CI
+
+# Workflow para el repositorio de la API (NestJS).
+# Cuando `backend/` se publique como repositorio propio, este archivo debe quedar
+# en la raíz del repo (`.github/workflows/ci.yml`).
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+concurrency:
+  group: backend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: Lint, unitarios, build y e2e
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: devcrm_user
+          POSTGRES_PASSWORD: devcrm_password
+          POSTGRES_DB: devcrm_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U devcrm_user -d devcrm_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      NODE_ENV: test
+      DB_HOST: localhost
+      DB_PORT: '5432'
+      DB_USER: devcrm_user
+      DB_PASSWORD: devcrm_password
+      DB_NAME: devcrm_test
+      DB_SSL: 'false'
+      DB_MIGRATIONS_RUN: 'true'
+      TEST_SEED_ENABLED: 'true'
+      JWT_SECRET: ci_secret_solo_para_pruebas
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Pruebas unitarias
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      # Las migraciones se leen de `dist/migrations`, por eso el build va antes.
+      - name: Pruebas e2e (PostgreSQL real)
+        run: npm run test:e2e

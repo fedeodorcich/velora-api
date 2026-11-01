@@ -8,6 +8,8 @@ export default defineConfig({
   test: {
     globals: true,
     root: './',
-    include: ['**/*.spec.ts'],
+    // Solo unitarios: los e2e viven en `test/` y tienen su propia configuración.
+    include: ['src/**/*.spec.ts'],
+    exclude: ['node_modules/**', 'dist/**', 'test/**'],
   },
 });
