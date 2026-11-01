@@ -73,4 +73,8 @@ export const env = {
     /** Duración del token expresada en segundos (por defecto 7 días). */
     expiresIn: readNumber('JWT_EXPIRES_IN', 60 * 60 * 24 * 7),
   },
+  testing: {
+    /** Endpoint de seed de datos demo: solo disponible fuera de producción con la flag activa. */
+    seedEnabled: readBoolean('TEST_SEED_ENABLED', false) && !isProduction,
+  },
 } as const;

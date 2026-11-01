@@ -9,5 +9,6 @@ import { PaymentsService } from './payments.service.js';
   imports: [TypeOrmModule.forFeature([Payment, Project])],
   controllers: [PaymentsController],
   providers: [PaymentsService],
+  exports: [PaymentsService],
 })
 export class PaymentsModule {}

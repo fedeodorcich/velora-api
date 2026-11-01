@@ -10,6 +10,8 @@ import { PaymentsModule } from './modules/payments/payments.module.js';
 import { ProjectsModule } from './modules/projects/projects.module.js';
 import { QuotesModule } from './modules/quotes/quotes.module.js';
 import { DashboardModule } from './modules/dashboard/dashboard.module.js';
+// Módulo de seed para desarrollo (endpoint /api/dev/seed).
+import { DevModule } from './modules/dev/dev.module.js';
 
 @Module({
   imports: [
@@ -24,6 +26,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module.js';
     ProjectsModule,
     PaymentsModule,
     DashboardModule,
+    DevModule,
   ],
   controllers: [AppController],
   providers: [AppService],
