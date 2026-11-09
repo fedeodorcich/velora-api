@@ -1,6 +1,7 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { QueryFailedError, Repository } from 'typeorm';
+import { paginatedResult, type PaginatedResult } from '../../core/dto/paginated-result.js';
 import { Project } from '../projects/entities/project.entity.js';
 import { Quote } from '../quotes/entities/quote.entity.js';
 import { Client } from './entities/client.entity.js';
@@ -22,6 +23,16 @@ export class ClientsService {
       where: { userId },
       order: { createdAt: 'DESC' },
     });
+  }
+
+  async findPage(userId: string, page: number, limit: number): Promise<PaginatedResult<Client>> {
+    const [items, total] = await this.clientsRepository.findAndCount({
+      where: { userId },
+      order: { createdAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+    return paginatedResult(items, total, page, limit);
   }
 
   async findOne(userId: string, id: string): Promise<Client> {

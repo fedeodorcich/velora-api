@@ -9,12 +9,15 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { CurrentUser } from '../../core/decorators/current-user.decorator.js';
 import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard.js';
 import type { AuthenticatedUser } from '../../core/interfaces/authenticated-user.interface.js';
+import type { PaginatedResult } from '../../core/dto/paginated-result.js';
 import { CreatePaymentDto } from './dto/create-payment.dto.js';
+import { PaymentListQueryDto } from './dto/payment-list-query.dto.js';
 import { UpdatePaymentDto } from './dto/update-payment.dto.js';
 import { UpdatePaymentStatusDto } from './dto/update-payment-status.dto.js';
 import { Payment } from './entities/payment.entity.js';
@@ -26,8 +29,19 @@ export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
 
   @Get()
-  findAll(@CurrentUser() user: AuthenticatedUser): Promise<Payment[]> {
-    return this.paymentsService.findAll(user.id);
+  findAll(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() query: PaymentListQueryDto,
+  ): Promise<Payment[] | PaginatedResult<Payment>> {
+    if (query.page === undefined && query.limit === undefined && query.status === undefined) {
+      return this.paymentsService.findAll(user.id);
+    }
+    return this.paymentsService.findPage(
+      user.id,
+      query.page ?? 1,
+      query.limit ?? 12,
+      query.status,
+    );
   }
 
   @Get(':id')

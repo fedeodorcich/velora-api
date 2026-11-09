@@ -1,10 +1,19 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { LessThan, MoreThanOrEqual, Repository } from 'typeorm';
+import { paginatedResult, type PaginatedResult } from '../../core/dto/paginated-result.js';
 import { Project } from '../projects/entities/project.entity.js';
 import { CreatePaymentDto } from './dto/create-payment.dto.js';
 import { UpdatePaymentDto } from './dto/update-payment.dto.js';
 import { Payment, PaymentStatus } from './entities/payment.entity.js';
+import type { PaymentListStatus } from './dto/payment-list-query.dto.js';
+
+function todayIso(): string {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${now.getFullYear()}-${month}-${day}`;
+}
 
 /**
  * Toda operación filtra por `userId` para garantizar el aislamiento multi-usuario.
@@ -25,6 +34,31 @@ export class PaymentsService {
       relations: { project: { client: true } },
       order: { dueDate: 'ASC', number: 'ASC' },
     });
+  }
+
+  async findPage(
+    userId: string,
+    page: number,
+    limit: number,
+    status?: PaymentListStatus,
+  ): Promise<PaginatedResult<Payment>> {
+    const today = todayIso();
+    const where = !status
+      ? { userId }
+      : status === 'vencido'
+        ? { userId, status: PaymentStatus.Pendiente, dueDate: LessThan(today) }
+        : status === 'pendiente'
+          ? { userId, status: PaymentStatus.Pendiente, dueDate: MoreThanOrEqual(today) }
+          : { userId, status: PaymentStatus.Pagado };
+
+    const [items, total] = await this.paymentsRepository.findAndCount({
+      where,
+      relations: { project: { client: true } },
+      order: { dueDate: 'ASC', number: 'ASC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+    return paginatedResult(items, total, page, limit);
   }
 
   async findOne(userId: string, id: string): Promise<Payment> {

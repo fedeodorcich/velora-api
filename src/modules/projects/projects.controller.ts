@@ -15,7 +15,9 @@ import {
 import { CurrentUser } from '../../core/decorators/current-user.decorator.js';
 import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard.js';
 import type { AuthenticatedUser } from '../../core/interfaces/authenticated-user.interface.js';
+import type { PaginatedResult } from '../../core/dto/paginated-result.js';
 import { CreateProjectDto } from './dto/create-project.dto.js';
+import { ProjectListQueryDto } from './dto/project-list-query.dto.js';
 import { UpdateProjectDto } from './dto/update-project.dto.js';
 import { UpdateProjectStatusDto } from './dto/update-project-status.dto.js';
 import { Project } from './entities/project.entity.js';
@@ -27,8 +29,19 @@ export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}
 
   @Get()
-  findAll(@CurrentUser() user: AuthenticatedUser): Promise<Project[]> {
-    return this.projectsService.findAll(user.id);
+  findAll(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() query: ProjectListQueryDto,
+  ): Promise<Project[] | PaginatedResult<Project>> {
+    if (query.page === undefined && query.limit === undefined && query.status === undefined) {
+      return this.projectsService.findAll(user.id);
+    }
+    return this.projectsService.findPage(
+      user.id,
+      query.page ?? 1,
+      query.limit ?? 12,
+      query.status,
+    );
   }
 
   @Get(':id')

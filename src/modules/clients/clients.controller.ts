@@ -15,8 +15,10 @@ import {
 import { CurrentUser } from '../../core/decorators/current-user.decorator.js';
 import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard.js';
 import type { AuthenticatedUser } from '../../core/interfaces/authenticated-user.interface.js';
+import type { PaginatedResult } from '../../core/dto/paginated-result.js';
 import { ClientsService } from './clients.service.js';
 import { CreateClientDto } from './dto/create-client.dto.js';
+import { ClientListQueryDto } from './dto/client-list-query.dto.js';
 import { UpdateClientDto } from './dto/update-client.dto.js';
 import { Client } from './entities/client.entity.js';
 
@@ -26,8 +28,14 @@ export class ClientsController {
   constructor(private readonly clientsService: ClientsService) {}
 
   @Get()
-  findAll(@CurrentUser() user: AuthenticatedUser): Promise<Client[]> {
-    return this.clientsService.findAll(user.id);
+  findAll(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() query: ClientListQueryDto,
+  ): Promise<Client[] | PaginatedResult<Client>> {
+    if (query.page === undefined && query.limit === undefined) {
+      return this.clientsService.findAll(user.id);
+    }
+    return this.clientsService.findPage(user.id, query.page ?? 1, query.limit ?? 12);
   }
 
   @Get(':id')

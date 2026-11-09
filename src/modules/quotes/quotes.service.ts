@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { paginatedResult, type PaginatedResult } from '../../core/dto/paginated-result.js';
 import { ClientsService } from '../clients/clients.service.js';
 import { Project } from '../projects/entities/project.entity.js';
 import { CreateQuoteDto } from './dto/create-quote.dto.js';
@@ -41,6 +42,22 @@ export class QuotesService {
       relations: { client: true },
       order: { number: 'DESC' },
     });
+  }
+
+  async findPage(
+    userId: string,
+    page: number,
+    limit: number,
+    status?: QuoteStatus,
+  ): Promise<PaginatedResult<Quote>> {
+    const [items, total] = await this.quotesRepository.findAndCount({
+      where: status ? { userId, status } : { userId },
+      relations: { client: true },
+      order: { number: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+    return paginatedResult(items, total, page, limit);
   }
 
   async findOne(userId: string, id: string): Promise<QuoteWithItems> {

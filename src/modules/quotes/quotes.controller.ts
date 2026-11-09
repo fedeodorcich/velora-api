@@ -9,11 +9,14 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { CurrentUser } from '../../core/decorators/current-user.decorator.js';
 import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard.js';
 import type { AuthenticatedUser } from '../../core/interfaces/authenticated-user.interface.js';
+import type { PaginatedResult } from '../../core/dto/paginated-result.js';
+import { QuoteListQueryDto } from './dto/quote-list-query.dto.js';
 import { CreateQuoteDto } from './dto/create-quote.dto.js';
 import { UpdateQuoteDto } from './dto/update-quote.dto.js';
 import { UpdateQuoteStatusDto } from './dto/update-quote-status.dto.js';
@@ -26,8 +29,19 @@ export class QuotesController {
   constructor(private readonly quotesService: QuotesService) {}
 
   @Get()
-  findAll(@CurrentUser() user: AuthenticatedUser): Promise<Quote[]> {
-    return this.quotesService.findAll(user.id);
+  findAll(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() query: QuoteListQueryDto,
+  ): Promise<Quote[] | PaginatedResult<Quote>> {
+    if (query.page === undefined && query.limit === undefined && query.status === undefined) {
+      return this.quotesService.findAll(user.id);
+    }
+    return this.quotesService.findPage(
+      user.id,
+      query.page ?? 1,
+      query.limit ?? 12,
+      query.status,
+    );
   }
 
   @Get(':id')
