@@ -3,6 +3,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { QueryFailedError } from 'typeorm';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { User } from '../users/entities/user.entity.js';
 import { Quote } from '../quotes/entities/quote.entity.js';
 import { ClientsService } from './clients.service.js';
 import { Client, ClientStatus } from './entities/client.entity.js';
@@ -30,6 +31,9 @@ describe('ClientsService', () => {
   let service: ClientsService;
   const transactionManagerMock = {
     delete: vi.fn(),
+    findOne: vi.fn(),
+    count: vi.fn(),
+    save: vi.fn(),
   };
   const repositoryMock = {
     find: vi.fn(),
@@ -117,14 +121,46 @@ describe('ClientsService', () => {
 
   it('actualiza solo los campos enviados', async () => {
     const existing = buildClient();
-    repositoryMock.findOne.mockResolvedValue(existing);
-    repositoryMock.save.mockImplementation((client: Client) => Promise.resolve(client));
+    transactionManagerMock.findOne.mockImplementation((entity) =>
+      Promise.resolve(entity === User ? { id: 'user-1', proUntil: null } : existing),
+    );
+    transactionManagerMock.count.mockResolvedValue(0);
+    transactionManagerMock.save.mockImplementation((client: Client) => Promise.resolve(client));
 
     const result = await service.update('user-1', 'client-1', { status: ClientStatus.Activo });
 
     expect(result.status).toBe(ClientStatus.Activo);
     expect(result.name).toBe('Estudio Norte');
     expect(result.email).toBe('hola@estudionorte.test');
+  });
+
+  it('rechaza la reactivación al alcanzar el cupo del plan Gratis', async () => {
+    transactionManagerMock.findOne.mockImplementation((entity) =>
+      Promise.resolve(entity === User ? { id: 'user-1', proUntil: new Date(0) } : buildClient()),
+    );
+    transactionManagerMock.count.mockResolvedValue(5);
+
+    await expect(service.update('user-1', 'client-1', { status: ClientStatus.Activo })).rejects.toMatchObject({
+      response: { reason: 'active_client_limit' },
+    });
+    expect(transactionManagerMock.count).toHaveBeenCalledWith(Client, {
+      where: { userId: 'user-1', status: ClientStatus.Activo },
+    });
+    expect(transactionManagerMock.save).not.toHaveBeenCalled();
+  });
+
+  it('permite activar un cliente si Pro está vigente', async () => {
+    transactionManagerMock.findOne.mockImplementation((entity) =>
+      Promise.resolve(
+        entity === User ? { id: 'user-1', proUntil: new Date(Date.now() + 60_000) } : buildClient(),
+      ),
+    );
+    transactionManagerMock.save.mockImplementation((client: Client) => Promise.resolve(client));
+
+    const result = await service.update('user-1', 'client-1', { status: ClientStatus.Activo });
+
+    expect(result.status).toBe(ClientStatus.Activo);
+    expect(transactionManagerMock.count).not.toHaveBeenCalled();
   });
 
   it('elimina el cliente del usuario autenticado', async () => {

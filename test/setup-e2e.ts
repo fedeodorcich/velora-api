@@ -16,4 +16,6 @@ process.env.DB_NAME = process.env.E2E_DB_NAME ?? 'devcrm_test';
 process.env.DB_SSL = process.env.E2E_DB_SSL ?? 'false';
 process.env.DB_MIGRATIONS_RUN = 'true';
 process.env.TEST_SEED_ENABLED = 'true';
+process.env.BILLING_CHECKOUT_URL = '';
+process.env.BILLING_CHECKOUT_PRICE = '';
 process.env.JWT_SECRET = process.env.JWT_SECRET ?? 'e2e_secret_change_me';

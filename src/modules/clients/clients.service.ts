@@ -1,10 +1,12 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { QueryFailedError, Repository } from 'typeorm';
+import { EntityManager, QueryFailedError, Repository } from 'typeorm';
+import { FREE_ACTIVE_CLIENT_LIMIT, hasProAccess } from '../../core/billing/plan.js';
 import { paginatedResult, type PaginatedResult } from '../../core/dto/paginated-result.js';
 import { Project } from '../projects/entities/project.entity.js';
 import { Quote } from '../quotes/entities/quote.entity.js';
-import { Client } from './entities/client.entity.js';
+import { User } from '../users/entities/user.entity.js';
+import { Client, ClientStatus } from './entities/client.entity.js';
 import { CreateClientDto } from './dto/create-client.dto.js';
 import { UpdateClientDto } from './dto/update-client.dto.js';
 
@@ -53,14 +55,65 @@ export class ClientsService {
       cuilCuit: dto.cuilCuit ?? null,
       currency: dto.currency ? dto.currency.toUpperCase() : 'USD',
       notes: dto.notes ?? null,
-      status: dto.status,
+      status: dto.status ?? ClientStatus.Lead,
     });
-    return this.clientsRepository.save(client);
+    if (client.status !== ClientStatus.Activo) {
+      return this.clientsRepository.save(client);
+    }
+
+    return this.clientsRepository.manager.transaction(async (manager) => {
+      const user = await this.lockAccount(manager, userId);
+      await this.ensureActiveClientSlot(manager, user);
+      return manager.save(client);
+    });
   }
 
-  async update(userId: string, id: string, dto: UpdateClientDto): Promise<Client> {
-    const client = await this.findOne(userId, id);
+  update(userId: string, id: string, dto: UpdateClientDto): Promise<Client> {
+    return this.clientsRepository.manager.transaction(async (manager) => {
+      const user = await this.lockAccount(manager, userId);
+      const client = await manager.findOne(Client, { where: { id, userId } });
+      if (!client) {
+        throw new NotFoundException('Cliente no encontrado.');
+      }
 
+      if (dto.status === ClientStatus.Activo && client.status !== ClientStatus.Activo) {
+        await this.ensureActiveClientSlot(manager, user);
+      }
+
+      return this.updateClient(manager, client, dto);
+    });
+  }
+
+  private async lockAccount(manager: EntityManager, userId: string): Promise<User> {
+    // Serializa los cambios de clientes por cuenta antes de contar los activos.
+    const user = await manager.findOne(User, {
+      where: { id: userId },
+      select: { id: true, proUntil: true },
+      lock: { mode: 'for_no_key_update' },
+    });
+    if (!user) {
+      throw new NotFoundException('La cuenta no existe.');
+    }
+    return user;
+  }
+
+  private async ensureActiveClientSlot(manager: EntityManager, user: User): Promise<void> {
+    if (hasProAccess(user.proUntil)) {
+      return;
+    }
+
+    const count = await manager.count(Client, {
+      where: { userId: user.id, status: ClientStatus.Activo },
+    });
+    if (count >= FREE_ACTIVE_CLIENT_LIMIT) {
+      throw new ForbiddenException({
+        reason: 'active_client_limit',
+        message: `El plan Gratis permite hasta ${FREE_ACTIVE_CLIENT_LIMIT} clientes activos. Podés pasar otro cliente a Inactivo o activar Pro.`,
+      });
+    }
+  }
+
+  private updateClient(manager: EntityManager, client: Client, dto: UpdateClientDto): Promise<Client> {
     if (dto.name !== undefined) {
       client.name = dto.name.trim();
     }
@@ -82,11 +135,11 @@ export class ClientsService {
     if (dto.notes !== undefined) {
       client.notes = dto.notes;
     }
-    if (dto.status !== undefined) {
+    if (dto.status != null) {
       client.status = dto.status;
     }
 
-    return this.clientsRepository.save(client);
+    return manager.save(client);
   }
 
   async remove(userId: string, id: string, cascade = false): Promise<void> {

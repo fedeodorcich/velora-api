@@ -5,6 +5,7 @@ import { AppService } from './app.service.js';
 import { env } from './core/config/env.js';
 import { dataSourceOptions } from './core/database/typeorm.config.js';
 import { AuthModule } from './modules/auth/auth.module.js';
+import { BillingModule } from './modules/billing/billing.module.js';
 import { ClientsModule } from './modules/clients/clients.module.js';
 import { PaymentsModule } from './modules/payments/payments.module.js';
 import { ProjectsModule } from './modules/projects/projects.module.js';
@@ -21,6 +22,7 @@ import { DevModule } from './modules/dev/dev.module.js';
       migrationsRun: env.database.migrationsRun,
     }),
     AuthModule,
+    BillingModule,
     ClientsModule,
     QuotesModule,
     ProjectsModule,

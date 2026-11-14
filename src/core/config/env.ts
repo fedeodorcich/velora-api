@@ -50,7 +50,19 @@ if (isProduction && jwtSecret === jwtSecretFallback) {
   throw new Error('JWT_SECRET debe configurarse explícitamente en producción.');
 }
 
+const checkoutUrl = readString('BILLING_CHECKOUT_URL', '');
+const checkoutPrice = readString('BILLING_CHECKOUT_PRICE', '');
+if (checkoutUrl) {
+  const url = new URL(checkoutUrl);
+  if (url.protocol !== 'https:' || url.username || url.password || !checkoutPrice) {
+    throw new Error('Configurá un enlace HTTPS y un precio para el piloto Pro.');
+  }
+}
+
 export const env = {
+  billing: {
+    checkout: checkoutUrl ? { url: checkoutUrl, price: checkoutPrice } : null,
+  },
   nodeEnv,
   isProduction,
   port: readNumber('PORT', 3000),
