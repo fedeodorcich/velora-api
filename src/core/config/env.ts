@@ -59,7 +59,26 @@ if (checkoutUrl) {
   }
 }
 
+const mpToken = readString('MP_TEST_ACCESS_TOKEN', '');
+const mpPayer = readString('MP_TEST_PAYER_EMAIL', '').toLowerCase();
+const mpAmount = readNumber('MP_TEST_MONTHLY_ARS', 0);
+const mpBackUrl = readString('MP_TEST_BACK_URL', '');
+
+if (mpToken && (!(/^(TEST-|APP_USR-)/.test(mpToken)) || !mpPayer || !Number.isFinite(mpAmount) ||
+    mpAmount <= 0 || mpAmount > 10000000 || !mpBackUrl.startsWith('https://') ||
+    new URL(mpBackUrl).protocol !== 'https:')) {
+  throw new Error('Configuración incompleta del checkout de prueba de Mercado Pago.');
+}
+
+const mpWebhookSecret = readString('MP_WEBHOOK_SECRET', '');
+const mpCollectorId = readString('MP_WEBHOOK_COLLECTOR_ID', '');
+if (mpWebhookSecret && (!mpToken || !/^\d+$/.test(mpCollectorId))) {
+  throw new Error('Los webhooks requieren el token y el identificador del vendedor de Mercado Pago.');
+}
+
 export const env = {
+  mercadoPagoWebhook: { secret: mpWebhookSecret, collectorId: mpCollectorId },
+  mercadoPagoTest: mpToken ? { token: mpToken, payer: mpPayer, amount: mpAmount, backUrl: mpBackUrl } : null,
   billing: {
     checkout: checkoutUrl ? { url: checkoutUrl, price: checkoutPrice } : null,
   },

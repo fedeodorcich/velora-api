@@ -20,7 +20,7 @@ try {
   if (result.affected !== 1) {
     throw new Error('No se encontró una cuenta con ese correo.');
   }
-  console.log(expiry ? `Pro activo hasta ${expiry.toISOString()}.` : 'Pro revocado.');
+  console.log(expiry ? `Pro activo hasta ${expiry.toISOString()}.` : 'Activación manual de Pro revocada.');
 } finally {
   await dataSource.destroy();
 }

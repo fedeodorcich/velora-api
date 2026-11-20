@@ -51,7 +51,7 @@ export async function resetDatabase(app: INestApplication): Promise<void> {
   await app
     .get(DataSource)
     .query(
-      'TRUNCATE TABLE payments, projects, quote_items, quotes, clients, users RESTART IDENTITY CASCADE',
+      'TRUNCATE TABLE billing_webhook_jobs, billing_subscription_payments, payments, projects, quote_items, quotes, clients, users RESTART IDENTITY CASCADE',
     );
 }
 

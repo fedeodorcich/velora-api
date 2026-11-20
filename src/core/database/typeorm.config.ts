@@ -5,6 +5,8 @@ import { Client } from '../../modules/clients/entities/client.entity.js';
 import { Quote } from '../../modules/quotes/entities/quote.entity.js';
 import { QuoteItem } from '../../modules/quotes/entities/quote-item.entity.js';
 import { Project } from '../../modules/projects/entities/project.entity.js';
+import { BillingWebhookJob } from '../../modules/billing/entities/billing-webhook-job.entity.js';
+import { SubscriptionPayment } from '../../modules/billing/entities/subscription-payment.entity.js';
 import { Payment } from '../../modules/payments/entities/payment.entity.js';
 
 /**
@@ -19,7 +21,7 @@ export const dataSourceOptions: DataSourceOptions = {
   password: env.database.password,
   database: env.database.name,
   ssl: env.database.ssl ? { rejectUnauthorized: false } : false,
-  entities: [User, Client, Quote, QuoteItem, Project, Payment],
+  entities: [User, Client, Quote, QuoteItem, Project, Payment, BillingWebhookJob, SubscriptionPayment],
   migrations: ['dist/migrations/*.js'],
   synchronize: env.database.synchronize,
   logging: false,

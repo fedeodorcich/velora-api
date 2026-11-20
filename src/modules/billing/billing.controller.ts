@@ -4,6 +4,7 @@ import {
 import { CurrentUser } from '../../core/decorators/current-user.decorator.js';
 import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard.js';
 import type { AuthenticatedUser } from '../../core/interfaces/authenticated-user.interface.js';
+import { env } from '../../core/config/env.js';
 import { BillingService } from './billing.service.js';
 import { UpdateQuoteLogoDto } from './dto/update-quote-logo.dto.js';
 
@@ -14,8 +15,26 @@ export class BillingController {
 
   @Get()
   @Header('Cache-Control', 'no-store')
-  getPlan(@CurrentUser() user: AuthenticatedUser) {
-    return this.billing.getPlan(user.id);
+  async getPlan(@CurrentUser() user: AuthenticatedUser) {
+    const plan = await this.billing.getPlan(user.id);
+    return {
+      ...plan,
+      mercadoPagoTestPrice: this.billing.mercadoPagoTestPrice(user.email),
+      automaticBilling: Boolean(env.mercadoPagoWebhook.secret && env.mercadoPagoWebhook.collectorId),
+    };
+  }
+
+  @Get('mercado-pago/test-subscription')
+  @Header('Cache-Control', 'no-store')
+  getMercadoPagoTestSubscription(@CurrentUser() user: AuthenticatedUser) {
+    return this.billing.getMercadoPagoTestSubscription(user.id, user.email);
+  }
+
+  @Post('mercado-pago/test-checkout')
+  @HttpCode(HttpStatus.OK)
+  @Header('Cache-Control', 'no-store')
+  createMercadoPagoTestCheckout(@CurrentUser() user: AuthenticatedUser) {
+    return this.billing.createMercadoPagoTestCheckout(user.id, user.email);
   }
 
   @Post('interest')

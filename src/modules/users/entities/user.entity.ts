@@ -23,6 +23,15 @@ export class User {
   @Column({ name: 'pro_requested_at', type: 'timestamptz', nullable: true, select: false })
   proRequestedAt: Date | null;
 
+  @Column({ name: 'mp_test_checkout_url', type: 'text', nullable: true, select: false })
+  mpTestCheckoutUrl?: string | null;
+
+  @Column({ name: 'mp_pro_until', type: 'timestamptz', nullable: true, select: false })
+  mpProUntil?: Date | null;
+
+  @Column({ name: 'mp_subscription_status', type: 'varchar', length: 32, nullable: true, select: false })
+  mpSubscriptionStatus?: string | null;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 

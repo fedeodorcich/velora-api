@@ -88,7 +88,7 @@ export class ClientsService {
     // Serializa los cambios de clientes por cuenta antes de contar los activos.
     const user = await manager.findOne(User, {
       where: { id: userId },
-      select: { id: true, proUntil: true },
+      select: { id: true, proUntil: true, mpProUntil: true },
       lock: { mode: 'for_no_key_update' },
     });
     if (!user) {
@@ -98,7 +98,7 @@ export class ClientsService {
   }
 
   private async ensureActiveClientSlot(manager: EntityManager, user: User): Promise<void> {
-    if (hasProAccess(user.proUntil)) {
+    if (hasProAccess(user.proUntil, user.mpProUntil)) {
       return;
     }
 

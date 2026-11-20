@@ -43,9 +43,11 @@ describe('BillingService', () => {
 
     await expect(service.updateQuoteLogo('user-1', LOGO)).rejects.toBeInstanceOf(ForbiddenException);
     const [where, values] = users.update.mock.calls[0];
-    expect(where.id).toBe('user-1');
-    expect(where.proUntil.type).toBe(MoreThan(before).type);
-    expect(where.proUntil.value.getTime()).toBeGreaterThanOrEqual(before.getTime());
+    expect(where[0].id).toBe('user-1');
+    expect(where[0].proUntil.type).toBe(MoreThan(before).type);
+    expect(where[0].proUntil.value.getTime()).toBeGreaterThanOrEqual(before.getTime());
+    expect(where[1].id).toBe('user-1');
+    expect(where[1].mpProUntil.type).toBe(MoreThan(before).type);
     expect(values).toEqual({ quoteLogo: LOGO });
   });
 });
