@@ -21,7 +21,7 @@ describe('Webhooks de suscripción', () => {
   let worker: MercadoPagoWebhookService;
   let subscriptionStatus: string;
   let paymentStatus: string;
-  let approvedAt: string;
+  let approvedAt: string | null;
   let refunded: number;
   let paymentOwner: string;
   const remote = vi.fn();
@@ -50,7 +50,7 @@ describe('Webhooks de suscripción', () => {
     };
   }
 
-  async function notify(topic: string, id: string, signatureOverride?: string) {
+  async function notify(topic: string, id: string, signatureOverride?: string, metadata: Record<string, unknown> = {}) {
     const ts = String(Date.now());
     const signature = createHmac('sha256', secret)
       .update(`id:${id.toLowerCase()};request-id:req-e2e;ts:${ts};`).digest('hex');
@@ -58,7 +58,7 @@ describe('Webhooks de suscripción', () => {
       .query({ 'data.id': id })
       .set('x-request-id', 'req-e2e')
       .set('x-signature', signatureOverride ?? `ts=${ts},v1=${signature}`)
-      .send({ type: topic, data: { id }, live_mode: true, action: 'updated', api_version: 'v1' });
+      .send({ ...metadata, type: topic, data: { id }, live_mode: true, action: 'updated', api_version: 'v1' });
   }
 
   async function automaticUntil() {
@@ -161,6 +161,22 @@ describe('Webhooks de suscripción', () => {
     expect(await db.getRepository(SubscriptionPayment).count()).toBe(2);
   });
 
+  it('acepta el formato del simulador de suscripciones con entity, application_id y version', async () => {
+    await notify('payment', '123');
+    await worker.processNext();
+    subscriptionStatus = 'cancelled';
+    const response = await notify('subscription_preapproval', subscriptionId, undefined, {
+      entity: 'preapproval', application_id: '8311756276547737', version: 8,
+    });
+    expect(response.status).toBe(200);
+    await worker.processNext();
+    const user = await db.getRepository(User).findOneOrFail({
+      where: { id: session.user.id }, select: { id: true, mpSubscriptionStatus: true },
+    });
+    expect(user.mpSubscriptionStatus).toBe('cancelled');
+    expect(await automaticUntil()).toEqual(new Date('2030-02-28T12:00:00Z'));
+  });
+
   it('revierte el acceso automático ante reembolso y conserva la vigencia manual', async () => {
     await db.getRepository(User).update({ id: session.user.id }, { proUntil: new Date('2031-01-01T00:00:00Z') });
     await notify('payment', '123');
@@ -172,6 +188,50 @@ describe('Webhooks de suscripción', () => {
     expect(await automaticUntil()).toBeNull();
     const plan = await request(app.getHttpServer()).get(`${API}/billing`).set(session.auth).expect(200);
     expect(plan.body.proUntil).toBe('2031-01-01T00:00:00.000Z');
+  });
+
+  it.each(['rejected', 'cancelled', 'pending', 'in_process'])
+  ('no activa Pro con un pago %s sin aprobación', async (status) => {
+    paymentStatus = status;
+    approvedAt = null;
+    await notify('payment', '123');
+    await worker.processNext();
+    expect(await automaticUntil()).toBeNull();
+    const plan = await request(app.getHttpServer()).get(`${API}/billing`).set(session.auth).expect(200);
+    expect(plan.body.plan).toBe('free');
+    const job = await db.getRepository(BillingWebhookJob).findOneByOrFail({ id: 'payment:123' });
+    expect(job.pending).toBe(false);
+    expect(job.attempts).toBe(0);
+  });
+
+  it('una renovación rechazada conserva el período pagado y solo se extiende al aprobarse', async () => {
+    await notify('payment', '123');
+    await worker.processNext();
+    paymentStatus = 'rejected';
+    approvedAt = null;
+    await notify('payment', '456');
+    await worker.processNext();
+    expect(await automaticUntil()).toEqual(new Date('2030-02-28T12:00:00Z'));
+    paymentStatus = 'approved';
+    approvedAt = '2030-02-28T12:00:00Z';
+    await notify('payment', '456');
+    await worker.processNext();
+    await notify('payment', '456');
+    await worker.processNext();
+    expect(await automaticUntil()).toEqual(new Date('2030-03-28T12:00:00Z'));
+    expect(await db.getRepository(SubscriptionPayment).count()).toBe(2);
+  });
+
+  it('una suscripción cancelada no mantiene Pro después de vencer el período abonado', async () => {
+    approvedAt = '2020-01-31T12:00:00Z';
+    await notify('payment', '123');
+    await worker.processNext();
+    subscriptionStatus = 'cancelled';
+    await notify('subscription_preapproval', subscriptionId);
+    await worker.processNext();
+    expect(await automaticUntil()).toEqual(new Date('2020-02-29T12:00:00Z'));
+    const plan = await request(app.getHttpServer()).get(`${API}/billing`).set(session.auth).expect(200);
+    expect(plan.body.plan).toBe('free');
   });
 
   it('conserva el trabajo pendiente ante una falla del proveedor y lo reintenta', async () => {
