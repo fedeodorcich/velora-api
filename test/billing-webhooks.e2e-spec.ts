@@ -167,6 +167,7 @@ describe('Webhooks de suscripción', () => {
     subscriptionStatus = 'cancelled';
     const response = await notify('subscription_preapproval', subscriptionId, undefined, {
       entity: 'preapproval', application_id: '8311756276547737', version: 8,
+      date: '2021-11-01T02:02:02Z',
     });
     expect(response.status).toBe(200);
     await worker.processNext();

@@ -22,6 +22,7 @@ export class MercadoPagoWebhookDto {
   @Allow() action?: unknown;
   @Allow() api_version?: unknown;
   @Allow() date_created?: unknown;
+  @Allow() date?: unknown;
   @Allow() live_mode?: unknown;
   @Allow() user_id?: unknown;
   @Allow() application_id?: unknown;
