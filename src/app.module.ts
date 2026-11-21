@@ -1,3 +1,4 @@
+import { CommunityModule } from './modules/community/community.module.js';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller.js';
@@ -22,6 +23,7 @@ import { DevModule } from './modules/dev/dev.module.js';
       migrationsRun: env.database.migrationsRun,
     }),
     AuthModule,
+    CommunityModule,
     BillingModule,
     ClientsModule,
     QuotesModule,

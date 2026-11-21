@@ -1,7 +1,7 @@
 import { BadGatewayException, BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, MoreThan, Repository } from 'typeorm';
-import { FREE_ACTIVE_CLIENT_LIMIT, hasProAccess, proAccessUntil } from '../../core/billing/plan.js';
+import { FREE_ACTIVE_CLIENT_LIMIT, hasProAccess, hasFullAccess, proAccessUntil } from '../../core/billing/plan.js';
 import { env } from '../../core/config/env.js';
 import { User } from '../users/entities/user.entity.js';
 import { MAX_QUOTE_LOGO_BYTES } from './dto/update-quote-logo.dto.js';
@@ -24,12 +24,13 @@ export class BillingService {
 
     const isPro = hasProAccess(user.proUntil, user.mpProUntil);
     return {
-      plan: isPro ? 'pro' as const : 'free' as const,
-      proUntil: isPro ? proAccessUntil(user.proUntil, user.mpProUntil) : null,
-      quoteLogo: isPro ? user.quoteLogo : null,
+      membershipsEnabled: env.billing.membershipsEnabled,
+      plan: isPro && env.billing.membershipsEnabled ? 'pro' as const : 'free' as const,
+      proUntil: isPro && env.billing.membershipsEnabled ? proAccessUntil(user.proUntil, user.mpProUntil) : null,
+      quoteLogo: hasFullAccess(user.proUntil, user.mpProUntil) ? user.quoteLogo : null,
       interestRegistered: user.proRequestedAt !== null,
-      checkout: isPro ? null : env.billing.checkout,
-      activeClientLimit: isPro ? null : FREE_ACTIVE_CLIENT_LIMIT,
+      checkout: !env.billing.membershipsEnabled || isPro ? null : env.billing.checkout,
+      activeClientLimit: hasFullAccess(user.proUntil, user.mpProUntil) ? null : FREE_ACTIVE_CLIENT_LIMIT,
     };
   }
 
@@ -98,6 +99,7 @@ export class BillingService {
   }
 
   async registerInterest(userId: string): Promise<void> {
+    if (!env.billing.membershipsEnabled) throw new ForbiddenException('Las membresías no están disponibles. Todas las funciones son gratuitas.');
     await this.users.update({ id: userId, proRequestedAt: IsNull() }, { proRequestedAt: new Date() });
   }
 
@@ -117,7 +119,7 @@ export class BillingService {
     }
 
     const result = await this.users.update(
-      [
+      !env.billing.membershipsEnabled ? { id: userId } : [
         { id: userId, proUntil: MoreThan(new Date()) },
         { id: userId, mpProUntil: MoreThan(new Date()) },
       ],

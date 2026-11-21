@@ -1,7 +1,7 @@
 import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, QueryFailedError, Repository } from 'typeorm';
-import { FREE_ACTIVE_CLIENT_LIMIT, hasProAccess } from '../../core/billing/plan.js';
+import { FREE_ACTIVE_CLIENT_LIMIT, hasFullAccess } from '../../core/billing/plan.js';
 import { paginatedResult, type PaginatedResult } from '../../core/dto/paginated-result.js';
 import { Project } from '../projects/entities/project.entity.js';
 import { Quote } from '../quotes/entities/quote.entity.js';
@@ -50,7 +50,7 @@ export class ClientsService {
       where: { id: userId }, select: { id: true, proUntil: true, mpProUntil: true },
     });
     if (!user) throw new NotFoundException('La cuenta no existe.');
-    if (hasProAccess(user.proUntil, user.mpProUntil)) return { clientIds: null };
+    if (hasFullAccess(user.proUntil, user.mpProUntil)) return { clientIds: null };
     const clients = await this.clientsRepository.find({
       where: { userId }, select: { id: true },
       order: { createdAt: 'ASC', id: 'ASC' }, take: FREE_ACTIVE_CLIENT_LIMIT,
@@ -121,7 +121,7 @@ export class ClientsService {
   }
 
   private async ensureActiveClientSlot(manager: EntityManager, user: User): Promise<void> {
-    if (hasProAccess(user.proUntil, user.mpProUntil)) {
+    if (hasFullAccess(user.proUntil, user.mpProUntil)) {
       return;
     }
 

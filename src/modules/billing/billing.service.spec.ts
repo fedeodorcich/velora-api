@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { User } from '../users/entities/user.entity.js';
 import { BillingService } from './billing.service.js';
 
+vi.mock('../../core/config/env.js', () => ({ env: { billing: { membershipsEnabled: true, checkout: null } } }));
+
 const LOGO = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a+6kAAAAASUVORK5CYII=';
 const users = { findOne: vi.fn(), update: vi.fn() };
 const service = new BillingService(users as unknown as Repository<User>);

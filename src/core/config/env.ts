@@ -76,11 +76,21 @@ if (mpWebhookSecret && (!mpToken || !/^\d+$/.test(mpCollectorId))) {
   throw new Error('Los webhooks requieren el token y el identificador del vendedor de Mercado Pago.');
 }
 
+const supportEmail = readString('SUPPORT_EMAIL', '');
+if (supportEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(supportEmail)) throw new Error('SUPPORT_EMAIL no es un correo válido.');
+const donationUrl = readString('DONATION_CHECKOUT_URL', '');
+if (donationUrl) {
+  const u = new URL(donationUrl);
+  const validDestination = (u.hostname === 'link.mercadopago.com.ar' && u.pathname !== '/') || (u.hostname === 'www.mercadopago.com.ar' && u.pathname === '/checkout/v1/redirect' && u.searchParams.has('pref_id'));
+  if (u.protocol !== 'https:' || !validDestination || u.username || u.password) throw new Error('Usá un enlace HTTPS de Mercado Pago para las donaciones.');
+}
 export const env = {
+  community: { supportEmail, contactEnabled: readBoolean('CONTACT_FORM_ENABLED', false), donationUrl, donationsEnabled: readBoolean('DONATIONS_ENABLED', false), donationTestEnabled: readBoolean('DONATIONS_TEST_ENABLED', false) },
   mercadoPagoOneTimeEnabled: readBoolean('MP_ONE_TIME_ENABLED', false),
   mercadoPagoWebhook: { secret: mpWebhookSecret, collectorId: mpCollectorId },
   mercadoPagoTest: mpToken ? { token: mpToken, payer: mpPayer, amount: mpAmount, backUrl: mpBackUrl } : null,
   billing: {
+    membershipsEnabled: readBoolean('BILLING_MEMBERSHIPS_ENABLED', false),
     checkout: checkoutUrl ? { url: checkoutUrl, price: checkoutPrice } : null,
   },
   nodeEnv,

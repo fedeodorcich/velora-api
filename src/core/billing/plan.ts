@@ -1,3 +1,9 @@
+import { env } from '../config/env.js';
+
+export function hasFullAccess(manual?: Date | null, automatic?: Date | null): boolean {
+  return !env.billing.membershipsEnabled || hasProAccess(manual, automatic);
+}
+
 export const FREE_ACTIVE_CLIENT_LIMIT = 5;
 
 export function proAccessUntil(

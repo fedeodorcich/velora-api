@@ -8,6 +8,8 @@ import { Quote } from '../quotes/entities/quote.entity.js';
 import { ClientsService } from './clients.service.js';
 import { Client, ClientStatus } from './entities/client.entity.js';
 
+vi.mock('../../core/config/env.js', () => ({ env: { billing: { membershipsEnabled: true } } }));
+
 function buildClient(overrides: Partial<Client> = {}): Client {
   return {
     id: 'client-1',

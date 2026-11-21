@@ -16,6 +16,7 @@ process.env.DB_NAME = process.env.E2E_DB_NAME ?? 'devcrm_test';
 process.env.DB_SSL = process.env.E2E_DB_SSL ?? 'false';
 process.env.DB_MIGRATIONS_RUN = 'true';
 process.env.TEST_SEED_ENABLED = 'true';
+process.env.BILLING_MEMBERSHIPS_ENABLED = 'true';
 process.env.MP_ONE_TIME_ENABLED = 'true';
 process.env.MP_TEST_ACCESS_TOKEN = 'TEST-e2e-token';
 process.env.MP_TEST_PAYER_EMAIL = 'buyer-webhook@velora.test';

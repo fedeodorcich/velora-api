@@ -19,7 +19,7 @@ export class MercadoPagoPurchaseService {
 
   offer(email: string) {
     const config = env.mercadoPagoTest;
-    return env.mercadoPagoOneTimeEnabled &&
+    return env.billing.membershipsEnabled && env.mercadoPagoOneTimeEnabled &&
       config?.payer === email &&
       env.mercadoPagoWebhook.secret &&
       env.mercadoPagoWebhook.collectorId

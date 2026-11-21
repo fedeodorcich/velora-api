@@ -1,6 +1,7 @@
 import type { DataSourceOptions } from 'typeorm';
 import { env } from '../config/env.js';
 import { ProPurchase } from '../../modules/billing/entities/pro-purchase.entity.js';
+import { ContactRequest } from '../../modules/community/contact-request.entity.js';
 import { User } from '../../modules/users/entities/user.entity.js';
 import { Client } from '../../modules/clients/entities/client.entity.js';
 import { Quote } from '../../modules/quotes/entities/quote.entity.js';
@@ -22,7 +23,7 @@ export const dataSourceOptions: DataSourceOptions = {
   password: env.database.password,
   database: env.database.name,
   ssl: env.database.ssl ? { rejectUnauthorized: false } : false,
-  entities: [User, Client, Quote, QuoteItem, Project, Payment, BillingWebhookJob, SubscriptionPayment, ProPurchase],
+  entities: [User, Client, Quote, QuoteItem, Project, Payment, BillingWebhookJob, SubscriptionPayment, ProPurchase, ContactRequest],
   migrations: ['dist/migrations/*.js'],
   synchronize: env.database.synchronize,
   logging: false,
