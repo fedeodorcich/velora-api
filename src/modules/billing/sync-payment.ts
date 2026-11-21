@@ -1,6 +1,7 @@
 import dataSource from '../../core/database/data-source.js';
 import { env } from '../../core/config/env.js';
 import { BillingWebhookJob } from './entities/billing-webhook-job.entity.js';
+import { MercadoPagoPurchaseService } from './mercado-pago-purchase.service.js';
 import { MercadoPagoWebhookService } from './mercado-pago-webhook.service.js';
 
 const [paymentId, ...extra] = process.argv.slice(2);
@@ -17,7 +18,7 @@ try {
   await dataSource.getRepository(BillingWebhookJob).upsert({
     id, topic: 'payment', resourceId: paymentId, pending: true, attempts: 0, nextAttemptAt: new Date(),
   }, ['id']);
-  const service = new MercadoPagoWebhookService(dataSource);
+  const service = new MercadoPagoWebhookService(dataSource, new MercadoPagoPurchaseService(dataSource));
   // Procesa la cola pendiente incluyendo el pago solicitado, con un límite operativo.
   for (let index = 0; index < 100; index += 1) {
     const job = await dataSource.getRepository(BillingWebhookJob).findOneByOrFail({ id });

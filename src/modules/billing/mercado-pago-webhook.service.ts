@@ -1,3 +1,6 @@
+import { paidMonthUntil } from '../../core/billing/paid-month.js';
+export { paidMonthUntil } from '../../core/billing/paid-month.js';
+import { MercadoPagoPurchaseService } from './mercado-pago-purchase.service.js';
 import {
   BadGatewayException, BadRequestException, Injectable, Logger, ServiceUnavailableException,
   type OnModuleDestroy, type OnModuleInit,
@@ -36,26 +39,13 @@ interface ProviderPayment {
 
 const TOPICS = new Set(['payment', 'subscription_preapproval', 'subscription_authorized_payment']);
 
-export function paidMonthUntil(approvedAt: string): Date {
-  const approved = new Date(approvedAt);
-  if (!Number.isFinite(approved.getTime())) {
-    throw new Error('El pago no tiene una fecha válida.');
-  }
-  const until = new Date(approved);
-  until.setUTCDate(1);
-  until.setUTCMonth(until.getUTCMonth() + 1);
-  const lastDay = new Date(Date.UTC(until.getUTCFullYear(), until.getUTCMonth() + 1, 0)).getUTCDate();
-  until.setUTCDate(Math.min(approved.getUTCDate(), lastDay));
-  return until;
-}
-
 @Injectable()
 export class MercadoPagoWebhookService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(MercadoPagoWebhookService.name);
   private timer?: ReturnType<typeof setInterval>;
   private work?: Promise<void>;
 
-  constructor(private readonly db: DataSource) {}
+  constructor(private readonly db: DataSource, private readonly purchases: MercadoPagoPurchaseService) {}
 
   onModuleInit(): void {
     if (env.nodeEnv === 'test' || !env.mercadoPagoWebhook.secret || !env.mercadoPagoTest) {
@@ -207,6 +197,10 @@ export class MercadoPagoWebhookService implements OnModuleInit, OnModuleDestroy 
       throw new Error('Identificador de pago inválido.');
     }
     const initial = await this.request<ProviderPayment>(`/v1/payments/${paymentId}`);
+    if (initial.external_reference?.startsWith('velora-pro:')) {
+      await this.purchases.processPayment(manager, paymentId);
+      return;
+    }
     const subscriptionId = initial.point_of_interaction?.transaction_data?.subscription_id;
     if (!subscriptionId) {
       return;

@@ -93,65 +93,8 @@ export class BillingService {
     }
   }
 
-  async createMercadoPagoTestCheckout(userId: string, email: string): Promise<{ url: string }> {
-    const config = env.mercadoPagoTest;
-    if (!config || config.payer !== email) {
-      throw new ForbiddenException('El checkout de prueba no está disponible para esta cuenta.');
-    }
-
-    return this.users.manager.transaction(async (manager) => {
-      const user = await manager.findOne(User, {
-        where: { id: userId, email },
-        select: { id: true, mpTestCheckoutUrl: true },
-        lock: { mode: 'for_no_key_update' },
-      });
-      if (!user) {
-        throw new NotFoundException('La cuenta no existe.');
-      }
-      if (user.mpTestCheckoutUrl) {
-        return { url: user.mpTestCheckoutUrl };
-      }
-
-      let url: URL;
-      try {
-        const response = await fetch('https://api.mercadopago.com/preapproval', {
-          method: 'POST',
-          redirect: 'error',
-          signal: AbortSignal.timeout(8000),
-          headers: {
-            Authorization: `Bearer ${config.token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            reason: 'VeloraCRM Pro (prueba)',
-            external_reference: user.id,
-            payer_email: email,
-            auto_recurring: {
-              frequency: 1,
-              frequency_type: 'months',
-              transaction_amount: config.amount,
-              currency_id: 'ARS',
-            },
-            back_url: config.backUrl,
-            status: 'pending',
-          }),
-        });
-        if (!response.ok) {
-          throw new Error('Mercado Pago rechazó la solicitud.');
-        }
-        const data = await response.json() as { init_point?: string };
-        url = new URL(data.init_point ?? '');
-        if (url.origin !== 'https://www.mercadopago.com.ar' ||
-            url.pathname !== '/subscriptions/checkout') {
-          throw new Error('Enlace de checkout inesperado.');
-        }
-      } catch {
-        throw new BadGatewayException('No pudimos generar el enlace de prueba con Mercado Pago.');
-      }
-
-      await manager.update(User, { id: userId }, { mpTestCheckoutUrl: url.href });
-      return { url: url.href };
-    });
+  createMercadoPagoTestCheckout(): Promise<{ url: string }> {
+    throw new ForbiddenException('Las altas de suscripciones fueron reemplazadas por el pago único de Pro.');
   }
 
   async registerInterest(userId: string): Promise<void> {

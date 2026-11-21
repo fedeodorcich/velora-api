@@ -77,6 +77,7 @@ if (mpWebhookSecret && (!mpToken || !/^\d+$/.test(mpCollectorId))) {
 }
 
 export const env = {
+  mercadoPagoOneTimeEnabled: readBoolean('MP_ONE_TIME_ENABLED', false),
   mercadoPagoWebhook: { secret: mpWebhookSecret, collectorId: mpCollectorId },
   mercadoPagoTest: mpToken ? { token: mpToken, payer: mpPayer, amount: mpAmount, backUrl: mpBackUrl } : null,
   billing: {
