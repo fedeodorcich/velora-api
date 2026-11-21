@@ -16,6 +16,7 @@ function buildClient(overrides: Partial<Client> = {}): Client {
     email: 'hola@estudionorte.test',
     phone: null,
     company: null,
+    cuilCuit: null,
     currency: 'USD',
     notes: null,
     status: ClientStatus.Lead,
@@ -82,7 +83,7 @@ describe('QuotesService', () => {
     save: vi.fn((rows: QuoteItem[]) => Promise.resolve(rows)),
     delete: vi.fn(),
   };
-  const clientsServiceMock = { findOne: vi.fn() };
+  const clientsServiceMock = { findOne: vi.fn(), ensureCanCreateFor: vi.fn().mockResolvedValue(undefined) };
 
   beforeEach(async () => {
     vi.clearAllMocks();

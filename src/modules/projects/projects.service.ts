@@ -1,5 +1,6 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { ClientsService } from '../clients/clients.service.js';
 import { Repository } from 'typeorm';
 import { paginatedResult, type PaginatedResult } from '../../core/dto/paginated-result.js';
 import { Payment } from '../payments/entities/payment.entity.js';
@@ -16,6 +17,7 @@ import { Project, ProjectStatus } from './entities/project.entity.js';
 @Injectable()
 export class ProjectsService {
   constructor(
+    private readonly clientsService: ClientsService,
     @InjectRepository(Project)
     private readonly projectsRepository: Repository<Project>,
     @InjectRepository(Quote)
@@ -59,6 +61,7 @@ export class ProjectsService {
 
   async create(userId: string, dto: CreateProjectDto): Promise<Project> {
     const quote = await this.loadAvailableQuote(userId, dto.quoteId);
+    await this.clientsService.ensureCanCreateFor(userId, quote.clientId);
 
     const project = this.projectsRepository.create({
       userId,

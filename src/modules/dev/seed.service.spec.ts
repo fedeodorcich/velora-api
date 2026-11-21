@@ -105,7 +105,7 @@ describe('SeedService', () => {
       delete: vi.fn(() => Promise.resolve({ affected: 1 })),
     };
     dataSource = {
-      transaction: vi.fn((callback: (manager: typeof manager) => Promise<void>) => callback(manager)),
+      transaction: vi.fn((callback: (transactionManager: typeof manager) => Promise<void>) => callback(manager)),
     };
 
     service = new SeedService(

@@ -45,6 +45,29 @@ export class ClientsService {
     return client;
   }
 
+  async creationAccess(userId: string): Promise<{ clientIds: string[] | null }> {
+    const user = await this.clientsRepository.manager.findOne(User, {
+      where: { id: userId }, select: { id: true, proUntil: true, mpProUntil: true },
+    });
+    if (!user) throw new NotFoundException('La cuenta no existe.');
+    if (hasProAccess(user.proUntil, user.mpProUntil)) return { clientIds: null };
+    const clients = await this.clientsRepository.find({
+      where: { userId }, select: { id: true },
+      order: { createdAt: 'ASC', id: 'ASC' }, take: FREE_ACTIVE_CLIENT_LIMIT,
+    });
+    return { clientIds: clients.map((client) => client.id) };
+  }
+
+  async ensureCanCreateFor(userId: string, clientId: string): Promise<void> {
+    const { clientIds } = await this.creationAccess(userId);
+    if (clientIds !== null && !clientIds.includes(clientId)) {
+      throw new ForbiddenException({
+        reason: 'client_creation_limit',
+        message: 'El plan Gratis permite crear presupuestos, proyectos y cobros nuevos solo para tus primeros 5 clientes. Los registros existentes siguen disponibles. Activá Pro para trabajar con todos.',
+      });
+    }
+  }
+
   create(userId: string, dto: CreateClientDto): Promise<Client> {
     const client = this.clientsRepository.create({
       userId,

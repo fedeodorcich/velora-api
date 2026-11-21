@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { ClientsService } from '../clients/clients.service.js';
 import { LessThan, MoreThanOrEqual, Repository } from 'typeorm';
 import { paginatedResult, type PaginatedResult } from '../../core/dto/paginated-result.js';
 import { Project } from '../projects/entities/project.entity.js';
@@ -22,6 +23,7 @@ function todayIso(): string {
 @Injectable()
 export class PaymentsService {
   constructor(
+    private readonly clientsService: ClientsService,
     @InjectRepository(Payment)
     private readonly paymentsRepository: Repository<Payment>,
     @InjectRepository(Project)
@@ -74,6 +76,7 @@ export class PaymentsService {
 
   async create(userId: string, dto: CreatePaymentDto): Promise<Payment> {
     const project = await this.loadProject(userId, dto.projectId);
+    await this.clientsService.ensureCanCreateFor(userId, project.clientId);
 
     const payment = this.paymentsRepository.create({
       userId,

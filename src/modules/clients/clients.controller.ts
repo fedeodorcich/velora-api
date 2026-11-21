@@ -38,6 +38,11 @@ export class ClientsController {
     return this.clientsService.findPage(user.id, query.page ?? 1, query.limit ?? 12);
   }
 
+  @Get('creation-access')
+  creationAccess(@CurrentUser() user: AuthenticatedUser): Promise<{ clientIds: string[] | null }> {
+    return this.clientsService.creationAccess(user.id);
+  }
+
   @Get(':id')
   findOne(
     @CurrentUser() user: AuthenticatedUser,

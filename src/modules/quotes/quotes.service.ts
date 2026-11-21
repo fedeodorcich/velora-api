@@ -73,6 +73,7 @@ export class QuotesService {
 
   async create(userId: string, dto: CreateQuoteDto): Promise<QuoteWithItems> {
     const client = await this.clientsService.findOne(userId, dto.clientId);
+    await this.clientsService.ensureCanCreateFor(userId, client.id);
 
     const items = dto.items.map((item, index) => this.buildItem(item, index));
     const taxRate = dto.taxRate ?? 0;
@@ -104,6 +105,7 @@ export class QuotesService {
 
     if (dto.clientId !== undefined && dto.clientId !== quote.clientId) {
       const client = await this.clientsService.findOne(userId, dto.clientId);
+      await this.clientsService.ensureCanCreateFor(userId, client.id);
       quote.clientId = client.id;
     }
     if (dto.title !== undefined) {

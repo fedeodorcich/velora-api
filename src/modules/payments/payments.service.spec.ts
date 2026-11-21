@@ -1,3 +1,4 @@
+import { ClientsService } from '../clients/clients.service.js';
 import { NotFoundException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Test, type TestingModule } from '@nestjs/testing';
@@ -72,6 +73,7 @@ describe('PaymentsService', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
+        { provide: ClientsService, useValue: { ensureCanCreateFor: vi.fn().mockResolvedValue(undefined) } },
         PaymentsService,
         { provide: getRepositoryToken(Payment), useValue: paymentRepositoryMock },
         { provide: getRepositoryToken(Project), useValue: projectRepositoryMock },
