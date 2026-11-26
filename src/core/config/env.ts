@@ -111,7 +111,20 @@ if (donationUrl) {
 const contactMailFrom = readString('CONTACT_MAIL_FROM', '');
 if (/[\r\n]/.test(contactMailFrom))
   throw new Error('CONTACT_MAIL_FROM no es válido.');
+const googleClientId = readString('GOOGLE_CLIENT_ID', '');
+if (googleClientId && !/^[a-zA-Z0-9_-]+\.apps\.googleusercontent\.com$/.test(googleClientId)) throw new Error('GOOGLE_CLIENT_ID no es válido.');
+const sponsorUrl = readString('ADS_SPONSOR_URL', '');
+if (sponsorUrl) { const u = new URL(sponsorUrl); if(u.protocol !== 'https:' || u.username || u.password) throw new Error('ADS_SPONSOR_URL debe ser HTTPS sin credenciales.'); }
+const adsProvider = readString('ADS_PROVIDER', 'sponsor');
+if (!['sponsor','adsense'].includes(adsProvider)) throw new Error('ADS_PROVIDER debe ser sponsor o adsense.');
+const adsenseClient = readString('ADSENSE_CLIENT_ID', '');
+const adsenseSlot = readString('ADSENSE_SLOT_ID', '');
+if (adsenseClient && !/^ca-pub-[0-9]{16}$/.test(adsenseClient)) throw new Error('ADSENSE_CLIENT_ID no es válido.');
+if (adsenseSlot && !/^[0-9]{1,20}$/.test(adsenseSlot)) throw new Error('ADSENSE_SLOT_ID no es válido.');
 export const env = {
+  adsense: { client:adsenseClient, slot:adsenseSlot },
+  advertising: { provider:adsProvider, enabled: readBoolean('ADS_ENABLED',false), name:readString('ADS_SPONSOR_NAME',''), description:readString('ADS_SPONSOR_DESCRIPTION',''), url:sponsorUrl },
+  googleClientId,
   contactMail: {
     apiKey: readString('RESEND_API_KEY', ''),
     from: contactMailFrom,

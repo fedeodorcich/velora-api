@@ -1,3 +1,4 @@
+import { AdvertisingService } from './advertising.service.js';
 import {
   Body,
   Controller,
@@ -14,7 +15,9 @@ import { CommunityService } from './community.service.js';
 import { ContactRequestDto, DonationDto } from './community.dto.js';
 @Controller('community')
 export class CommunityController {
-  constructor(private readonly community: CommunityService) {}
+  constructor(private readonly community: CommunityService,private readonly advertising:AdvertisingService) {}
+ @Get('advertising') @Header('Cache-Control','no-store') @UseGuards(JwtAuthGuard)
+ advertisingStatus(@CurrentUser() user:AuthenticatedUser){return this.advertising.status(user.id);}
   @Get('config') @Header('Cache-Control', 'no-store') config() {
     return this.community.config();
   }

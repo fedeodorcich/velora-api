@@ -1,3 +1,6 @@
+import { env } from '../../core/config/env.js';
+import { GoogleAuthService } from './google-auth.service.js';
+import { GoogleLoginDto } from './dto/google-login.dto.js';
 import { Body, Controller, Get, HttpCode, HttpStatus, Patch, Post, UseGuards } from '@nestjs/common';
 import { CurrentUser } from '../../core/decorators/current-user.decorator.js';
 import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard.js';
@@ -10,7 +13,16 @@ import { UpdateProfileDto } from './dto/update-profile.dto.js';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService, private readonly googleAuth: GoogleAuthService) {}
+
+  @Get('google/config')
+  googleConfig() { return { clientId: env.googleClientId || null }; }
+
+  @Post('google')
+  @HttpCode(HttpStatus.OK)
+  async google(@Body() dto: GoogleLoginDto): Promise<AuthResponse> {
+    return this.authService.createSession(await this.googleAuth.authenticate(dto));
+  }
 
   @Post('register')
   register(@Body() dto: RegisterDto): Promise<AuthResponse> {

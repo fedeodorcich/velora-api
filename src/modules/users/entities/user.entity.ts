@@ -11,6 +11,15 @@ export class User {
   @Column({ name: 'password_hash', type: 'varchar', length: 255 })
   passwordHash: string;
 
+  @Column({ name: 'google_sub', type: 'varchar', length: 255, nullable: true, unique: true, select: false })
+  googleSub?: string | null;
+
+  @Column({ name: 'ad_free_since', type: 'timestamptz', nullable: true, select: false })
+  adFreeSince?: Date | null;
+
+  @Column({ name: 'ad_free_payment_ref', type: 'varchar', length: 128, nullable: true, unique: true, select: false })
+  adFreePaymentRef?: string | null;
+
   @Column({ type: 'varchar', length: 120 })
   name: string;
 

@@ -35,7 +35,7 @@ export class AuthService {
       name: dto.name,
     });
 
-    return this.buildAuthResponse(user);
+    return this.createSession(user);
   }
 
   async login(dto: LoginDto): Promise<AuthResponse> {
@@ -49,7 +49,7 @@ export class AuthService {
       throw new UnauthorizedException('Las credenciales no son válidas.');
     }
 
-    return this.buildAuthResponse(user);
+    return this.createSession(user);
   }
 
   async updateProfile(userId: string, dto: UpdateProfileDto): Promise<AuthenticatedUser> {
@@ -72,7 +72,7 @@ export class AuthService {
     await this.usersService.updatePassword(userId, passwordHash);
   }
 
-  private buildAuthResponse(user: User): AuthResponse {
+  createSession(user: User): AuthResponse {
     const payload: JwtPayload = { sub: user.id, email: user.email };
     return {
       accessToken: this.jwtService.sign(payload),

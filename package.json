@@ -25,7 +25,8 @@
     "test:cov": "vitest run --coverage",
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
     "pretest:e2e": "npm run build",
-    "test:e2e": "vitest run --config ./vitest.config.e2e.ts"
+    "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
+    "community:grant-ad-free": "node dist/modules/community/grant-ad-free.js"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.1",
@@ -37,6 +38,7 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "dotenv": "^18.0.8",
+    "google-auth-library": "^11.3.4",
     "mercadopago": "^3.6.2",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
