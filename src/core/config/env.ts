@@ -54,8 +54,15 @@ const checkoutUrl = readString('BILLING_CHECKOUT_URL', '');
 const checkoutPrice = readString('BILLING_CHECKOUT_PRICE', '');
 if (checkoutUrl) {
   const url = new URL(checkoutUrl);
-  if (url.protocol !== 'https:' || url.username || url.password || !checkoutPrice) {
-    throw new Error('Configurá un enlace HTTPS y un precio para el piloto Pro.');
+  if (
+    url.protocol !== 'https:' ||
+    url.username ||
+    url.password ||
+    !checkoutPrice
+  ) {
+    throw new Error(
+      'Configurá un enlace HTTPS y un precio para el piloto Pro.',
+    );
   }
 }
 
@@ -64,31 +71,63 @@ const mpPayer = readString('MP_TEST_PAYER_EMAIL', '').toLowerCase();
 const mpAmount = readNumber('MP_TEST_MONTHLY_ARS', 0);
 const mpBackUrl = readString('MP_TEST_BACK_URL', '');
 
-if (mpToken && (!(/^(TEST-|APP_USR-)/.test(mpToken)) || !mpPayer || !Number.isFinite(mpAmount) ||
-    mpAmount <= 0 || mpAmount > 10000000 || !mpBackUrl.startsWith('https://') ||
-    new URL(mpBackUrl).protocol !== 'https:')) {
-  throw new Error('Configuración incompleta del checkout de prueba de Mercado Pago.');
+if (
+  mpToken &&
+  (!/^(TEST-|APP_USR-)/.test(mpToken) ||
+    !mpPayer ||
+    !Number.isFinite(mpAmount) ||
+    mpAmount <= 0 ||
+    mpAmount > 10000000 ||
+    !mpBackUrl.startsWith('https://') ||
+    new URL(mpBackUrl).protocol !== 'https:')
+) {
+  throw new Error(
+    'Configuración incompleta del checkout de prueba de Mercado Pago.',
+  );
 }
 
 const mpWebhookSecret = readString('MP_WEBHOOK_SECRET', '');
 const mpCollectorId = readString('MP_WEBHOOK_COLLECTOR_ID', '');
 if (mpWebhookSecret && (!mpToken || !/^\d+$/.test(mpCollectorId))) {
-  throw new Error('Los webhooks requieren el token y el identificador del vendedor de Mercado Pago.');
+  throw new Error(
+    'Los webhooks requieren el token y el identificador del vendedor de Mercado Pago.',
+  );
 }
 
 const supportEmail = readString('SUPPORT_EMAIL', '');
-if (supportEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(supportEmail)) throw new Error('SUPPORT_EMAIL no es un correo válido.');
+if (supportEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(supportEmail))
+  throw new Error('SUPPORT_EMAIL no es un correo válido.');
 const donationUrl = readString('DONATION_CHECKOUT_URL', '');
 if (donationUrl) {
   const u = new URL(donationUrl);
-  const validDestination = (u.hostname === 'link.mercadopago.com.ar' && u.pathname !== '/') || (u.hostname === 'www.mercadopago.com.ar' && u.pathname === '/checkout/v1/redirect' && u.searchParams.has('pref_id'));
-  if (u.protocol !== 'https:' || !validDestination || u.username || u.password) throw new Error('Usá un enlace HTTPS de Mercado Pago para las donaciones.');
+  const validDestination =
+    (u.hostname === 'link.mercadopago.com.ar' && u.pathname !== '/') ||
+    (u.hostname === 'www.mercadopago.com.ar' &&
+      u.pathname === '/checkout/v1/redirect' &&
+      u.searchParams.has('pref_id'));
+  if (u.protocol !== 'https:' || !validDestination || u.username || u.password)
+    throw new Error('Usá un enlace HTTPS de Mercado Pago para las donaciones.');
 }
+const contactMailFrom = readString('CONTACT_MAIL_FROM', '');
+if (/[\r\n]/.test(contactMailFrom))
+  throw new Error('CONTACT_MAIL_FROM no es válido.');
 export const env = {
-  community: { supportEmail, contactEnabled: readBoolean('CONTACT_FORM_ENABLED', false), donationUrl, donationsEnabled: readBoolean('DONATIONS_ENABLED', false), donationTestEnabled: readBoolean('DONATIONS_TEST_ENABLED', false) },
+  contactMail: {
+    apiKey: readString('RESEND_API_KEY', ''),
+    from: contactMailFrom,
+  },
+  community: {
+    supportEmail,
+    contactEnabled: readBoolean('CONTACT_FORM_ENABLED', false),
+    donationUrl,
+    donationsEnabled: readBoolean('DONATIONS_ENABLED', false),
+    donationTestEnabled: readBoolean('DONATIONS_TEST_ENABLED', false),
+  },
   mercadoPagoOneTimeEnabled: readBoolean('MP_ONE_TIME_ENABLED', false),
   mercadoPagoWebhook: { secret: mpWebhookSecret, collectorId: mpCollectorId },
-  mercadoPagoTest: mpToken ? { token: mpToken, payer: mpPayer, amount: mpAmount, backUrl: mpBackUrl } : null,
+  mercadoPagoTest: mpToken
+    ? { token: mpToken, payer: mpPayer, amount: mpAmount, backUrl: mpBackUrl }
+    : null,
   billing: {
     membershipsEnabled: readBoolean('BILLING_MEMBERSHIPS_ENABLED', false),
     checkout: checkoutUrl ? { url: checkoutUrl, price: checkoutPrice } : null,

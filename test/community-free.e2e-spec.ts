@@ -43,6 +43,16 @@ vi.mock('../src/core/config/env.js', async (importOriginal) => {
     },
   };
 });
+vi.mock('../src/modules/community/contact-mail.service.js', () => ({
+  ContactMailService: class {
+    available() {
+      return Boolean(settings.supportEmail);
+    }
+    async notify() {
+      return true;
+    }
+  },
+}));
 const LOGO =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a+6kAAAAASUVORK5CYII=';
 
@@ -216,7 +226,7 @@ describe('Funciones gratuitas, aportes y contacto', () => {
         expect(reference).toMatch(/^velora-donation:/);
         expect(body.items?.[0]).toMatchObject({
           unit_price: 1000,
-          title: 'Donación voluntaria a VeloraCRM · sin contraprestación',
+          title: 'Donación voluntaria a Bakrivo · sin contraprestación',
         });
         expect(body).not.toHaveProperty('auto_recurring');
         return {
@@ -273,12 +283,10 @@ describe('Funciones gratuitas, aportes y contacto', () => {
     await app.get(MercadoPagoWebhookService).processNext();
     const db = app.get(DataSource);
     expect(await db.getRepository(SubscriptionPayment).count()).toBe(0);
-    const owner = await db
-      .getRepository(User)
-      .findOneOrFail({
-        where: { id: session.user.id },
-        select: { id: true, proUntil: true, mpProUntil: true },
-      });
+    const owner = await db.getRepository(User).findOneOrFail({
+      where: { id: session.user.id },
+      select: { id: true, proUntil: true, mpProUntil: true },
+    });
     expect(owner.proUntil).toBeNull();
     expect(owner.mpProUntil).toBeNull();
   }, 60000);

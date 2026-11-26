@@ -12,6 +12,7 @@ import { randomUUID } from 'node:crypto';
 import { Preference, MercadoPagoConfig } from 'mercadopago';
 import { MoreThan, Repository } from 'typeorm';
 import { env } from '../../core/config/env.js';
+import { ContactMailService } from './contact-mail.service.js';
 import { ContactRequest } from './contact-request.entity.js';
 import { ContactRequestDto } from './community.dto.js';
 
@@ -21,13 +22,13 @@ export class CommunityService {
   constructor(
     @InjectRepository(ContactRequest)
     private readonly contacts: Repository<ContactRequest>,
+    private readonly mail: ContactMailService,
   ) {}
 
   config() {
     return {
       supportEmail: env.community.supportEmail || null,
-      contactEnabled:
-        env.community.contactEnabled && Boolean(env.community.supportEmail),
+      contactEnabled: env.community.contactEnabled && this.mail.available(),
       donationUrl: env.community.donationsEnabled
         ? env.community.donationUrl || null
         : null,
@@ -39,7 +40,7 @@ export class CommunityService {
   }
 
   async contact(dto: ContactRequestDto) {
-    if (!env.community.contactEnabled || !env.community.supportEmail)
+    if (!env.community.contactEnabled || !this.mail.available())
       throw new ServiceUnavailableException(
         'El canal de soporte se está preparando. El envío todavía no está disponible.',
       );
@@ -74,10 +75,13 @@ export class CommunityService {
     const saved = await this.contacts.save(
       this.contacts.create({ name, email, subject: dto.subject, message }),
     );
+    const notificationSent = await this.mail.notify(saved);
     return {
       id: saved.id,
-      message:
-        'Tu consulta quedó registrada. Conservá este número de referencia.',
+      notificationSent,
+      message: notificationSent
+        ? 'Tu consulta quedó registrada y se notificó al equipo de soporte.'
+        : 'Tu consulta quedó guardada, pero no pudimos notificar al equipo por correo. Escribinos al correo de soporte e incluí esta referencia.',
     };
   }
 
@@ -104,7 +108,7 @@ export class CommunityService {
           items: [
             {
               id: 'velora-voluntary-donation',
-              title: 'Donación voluntaria a VeloraCRM · sin contraprestación',
+              title: 'Donación voluntaria a Bakrivo · sin contraprestación',
               quantity: 1,
               unit_price: amount,
               currency_id: 'ARS',

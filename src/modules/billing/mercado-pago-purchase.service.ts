@@ -86,7 +86,7 @@ export class MercadoPagoPurchaseService {
             items: [
               {
                 id: 'velora-pro-month',
-                title: 'VeloraCRM Pro · 1 mes sin renovación automática',
+                title: 'Bakrivo Pro · 1 mes sin renovación automática',
                 quantity: 1,
                 unit_price: purchase.amount,
                 currency_id: purchase.currency,
